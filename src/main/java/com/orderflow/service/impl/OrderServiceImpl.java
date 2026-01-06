@@ -1,14 +1,17 @@
 package com.orderflow.service.impl;
 
 import com.orderflow.domain.Order;
+import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.dto.OrderRequest;
 import com.orderflow.dto.OrderResponse;
 import com.orderflow.exception.InvalidOrderException;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
 
@@ -27,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderKind(request.getOrderKind());
         order.setPrice(request.getPrice());
         order.setQuantity(request.getQuantity());
+        order.setOrderStatus(OrderStatus.CREATED);
         order.setCreatedAt(LocalDateTime.now());
 
         Order saveOrder = orderRepository.save(order);

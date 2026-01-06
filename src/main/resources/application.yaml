@@ -1,3 +1,12 @@
 spring:
   application:
     name: orderflow-oms
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderflow
+    username: orderflow_user
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
