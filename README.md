@@ -49,6 +49,23 @@ It demonstrates asynchronous processing, clean architecture, and extensible desi
 
 ---
 
+## Credentials & Configuration
+
+This project uses **environment-based configuration** for database connectivity.
+
+- Database credentials are **not hardcoded** in the application or Docker image.
+- Credentials are injected at runtime using **environment variables** via Docker Compose.
+- A local `.env` file can be used for convenience and is **excluded from version control**.
+
+This approach ensures that:
+- Docker images remain environment-agnostic
+- Sensitive information is not committed to source control
+- Configuration can vary across environments (local, CI, production)
+
+> **Note:** The credentials used in this repository are **dummy values for demonstration purposes only** and must be replaced with secure secrets in real deployments.
+
+---
+
 ## Future Enhancements
 - Kafka-based event-driven execution
 - Retry and failure handling with dead-letter queues
