@@ -10,10 +10,12 @@ import com.orderflow.exception.InvalidOrderException;
 import com.orderflow.execution.OrderExecutionEngine;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
@@ -52,6 +54,8 @@ public class OrderServiceImpl implements OrderService {
         order.transitionTo(OrderStatus.SENT_TO_EXECUTOR);
         orderRepository.save(order);
 
+        log.info("Order {} accepted for execution", order.getOrderId());
+
         return new OrderResponse(
                 order.getOrderId(),
                 order.getOrderStatus(),
@@ -80,7 +84,7 @@ public class OrderServiceImpl implements OrderService {
         );
     }
 
-    public void validate(OrderRequest request){
+    private void validate(OrderRequest request){
         if(request.getQuantity() == null || request.getQuantity() <= 0){
             throw new InvalidOrderException(
                     ErrorCode.INVALID_ORDER,
@@ -89,7 +93,7 @@ public class OrderServiceImpl implements OrderService {
         if(request.getOrderKind().name().equals("LIMIT") &&
                 (request.getPrice() == null || request.getPrice() <= 0)){
             throw new InvalidOrderException(
-                    ErrorCode.ORDER_NOT_FOUND,
+                    ErrorCode.INVALID_ORDER,
                     "Price required for LIMIT order");
         }
     }

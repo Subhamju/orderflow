@@ -8,7 +8,9 @@ import com.orderflow.repository.OrderRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ExecutorService;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class DefaultOrderExecutionEngine implements OrderExecutionEngine{
     private final ExecutorService executorService;
@@ -32,12 +34,17 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine{
                 ExecutionStrategy strategy =
                         strategyFactory.getStrategy(order.getOrderKind());
 
-                strategy.execute(order);
-
-                order.transitionTo(OrderStatus.COMPLETED);
+                ExecutionResult result = strategy.execute(order);
+               if(result == ExecutionResult.SUCCESS) {
+                   order.transitionTo(OrderStatus.EXECUTED);
+               }
+               else {
+                   order.transitionTo(OrderStatus.FAILED);
+               }
                 orderRepository.save(order);
 
             } catch (Exception ex) {
+                log.error("Execution failed for order {}", order.getOrderId(), ex);
                 order.transitionTo(OrderStatus.FAILED);
                 orderRepository.save(order);
             }

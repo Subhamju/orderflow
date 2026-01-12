@@ -1,6 +1,7 @@
 package com.orderflow.execution.strategy;
 
 import com.orderflow.domain.entity.Order;
+import com.orderflow.execution.ExecutionResult;
 import com.orderflow.service.TradeService;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,12 @@ public class LimitOrderExecutionStrategy implements ExecutionStrategy{
     }
 
     @Override
-    public void execute(Order order) {
-        //For now Treat Market as Limit
-        tradeService.execute(order);
-
+    public ExecutionResult execute(Order order) {
+        try{
+            tradeService.execute(order);
+            return ExecutionResult.SUCCESS;
+        } catch (Exception e) {
+            return ExecutionResult.FAILURE;
+        }
     }
 }

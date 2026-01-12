@@ -1,6 +1,7 @@
 package com.orderflow.execution.strategy;
 
 import com.orderflow.domain.entity.Order;
+import com.orderflow.execution.ExecutionResult;
 import com.orderflow.service.TradeService;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,13 @@ public class MarketOrderExecutionStrategy implements ExecutionStrategy{
     }
 
     @Override
-    public void execute(Order order) {
-      tradeService.execute(order);
+    public ExecutionResult execute(Order order) {
+        try{
+            tradeService.execute(order);
+            return ExecutionResult.SUCCESS;
+        } catch (Exception e) {
+           return ExecutionResult.FAILURE;
+        }
+
     }
 }

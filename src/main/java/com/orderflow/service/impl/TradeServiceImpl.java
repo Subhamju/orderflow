@@ -12,11 +12,9 @@ import java.time.LocalDateTime;
 @Service
 public class TradeServiceImpl implements TradeService {
     private final TradeRepository tradeRepository;
-    private final OrderRepository orderRepository;
 
     public TradeServiceImpl(TradeRepository tradeRepository, OrderRepository orderRepository) {
         this.tradeRepository = tradeRepository;
-        this.orderRepository = orderRepository;
     }
 
     @Override
@@ -30,8 +28,5 @@ public class TradeServiceImpl implements TradeService {
         trade.setExecutedAt(LocalDateTime.now());
 
         tradeRepository.save(trade);
-
-        order.transitionTo(OrderStatus.EXECUTED);
-        orderRepository.save(order);
     }
 }
