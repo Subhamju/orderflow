@@ -50,9 +50,10 @@ public class OrderServiceImpl implements OrderService {
             throw ex;
         }
 
-        executionEngine.execute(order);
         order.transitionTo(OrderStatus.SENT_TO_EXECUTOR);
         orderRepository.save(order);
+
+        executionEngine.execute(order);
 
         log.info("Order {} accepted for execution", order.getOrderId());
 
