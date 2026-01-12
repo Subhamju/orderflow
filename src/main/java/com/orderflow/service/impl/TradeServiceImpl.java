@@ -31,7 +31,7 @@ public class TradeServiceImpl implements TradeService {
 
         tradeRepository.save(trade);
 
-        order.setOrderStatus(OrderStatus.EXECUTED);
+        order.transitionTo(OrderStatus.EXECUTED);
         orderRepository.save(order);
     }
 }

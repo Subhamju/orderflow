@@ -34,6 +34,7 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine{
 
                 strategy.execute(order);
 
+                order.transitionTo(OrderStatus.COMPLETED);
                 orderRepository.save(order);
 
             } catch (Exception ex) {
