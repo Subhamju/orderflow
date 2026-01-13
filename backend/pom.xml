@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.orderflow</groupId>
-	<artifactId>orderflow-oms</artifactId>
+	<artifactId>orderflow-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>orderflow-oms</name>
+	<name>orderflow-backend</name>
 	<description>Order management &amp; trade processing platform</description>
 	<url/>
 	<licenses>

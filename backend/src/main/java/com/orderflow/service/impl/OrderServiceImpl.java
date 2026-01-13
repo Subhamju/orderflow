@@ -1,6 +1,7 @@
 package com.orderflow.service.impl;
 
 import com.orderflow.domain.entity.Order;
+import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.dto.OrderDetailsResponse;
 import com.orderflow.dto.OrderRequest;
@@ -25,30 +26,30 @@ public class OrderServiceImpl implements OrderService {
         this.orderRepository = orderRepository;
         this.executionEngine = executionEngine;
     }
-
     @Override
     public OrderResponse placeOrder(OrderRequest request) {
+
+        validate(request);
 
         Order order = new Order();
         order.setUserId(request.getUserId());
         order.setInstrumentId(request.getInstrumentId());
         order.setOrderType(request.getOrderType());
         order.setOrderKind(request.getOrderKind());
-        order.setPrice(request.getPrice());
         order.setQuantity(request.getQuantity());
-        order.transitionTo(OrderStatus.CREATED);
         order.setCreatedAt(LocalDateTime.now());
+        if (request.getOrderKind() == OrderKind.LIMIT) {
+            order.setPrice(request.getPrice());
+        } else {
+            // MARKET order: price is not applicable
+            order.setPrice(null);
+        }
+
+        order.transitionTo(OrderStatus.CREATED);
         orderRepository.save(order);
 
-        try{
-            validate(request);
-            order.transitionTo(OrderStatus.VALIDATED);
-            orderRepository.save(order);
-        } catch (InvalidOrderException ex) {
-            order.transitionTo(OrderStatus.REJECTED);
-            orderRepository.save(order);
-            throw ex;
-        }
+        order.transitionTo(OrderStatus.VALIDATED);
+        orderRepository.save(order);
 
         order.transitionTo(OrderStatus.SENT_TO_EXECUTOR);
         orderRepository.save(order);

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: orderflow-oms
+    name: orderflow-backend
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
