@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { placeOrder } from "../services/orderService";
 import { v4 as uuidv4 } from "uuid";
+import { useNavigate } from "react-router-dom";
 
 
 
 function OrderForm() {
+    const navigate = useNavigate();
+
     const [form, setForm] = useState({
         userId: "",
         instrumentId: "",
@@ -72,22 +75,10 @@ function OrderForm() {
 
         try {
             const response = await placeOrder(form, idempotencyKey);
-            console.log("Order Payload:", form);
+            const orderId = response.data.orderId;
 
-            setSubmittedOrder(response.data);
-
-            //generate NEW key for next order
-
-            setIdempotencyKey(uuidv4());
-
-            setForm({
-                userId: "",
-                instrumentId: "",
-                orderType: "BUY",
-                orderKind: "LIMIT",
-                quantity: "",
-                price: ""
-            });
+            // redirect to order details page
+            navigate(`/orders/${orderId}`);
 
         } catch (error) {
             console.error(error);
