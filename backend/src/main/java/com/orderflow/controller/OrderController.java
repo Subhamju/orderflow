@@ -10,7 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/orders")
+@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/api/v1/orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -21,22 +22,18 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(
-            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
-            @RequestBody OrderRequest request
-    ) {
-        OrderResponse response =
-                orderService.placeOrder(request, idempotencyKey);
+            @RequestHeader(name = "Idempotency-Key", required = true) String idempotencyKey,
+            @RequestBody OrderRequest request) {
+        OrderResponse response = orderService.placeOrder(request, idempotencyKey);
 
-        HttpStatus status =
-                response.isDuplicate() ? HttpStatus.OK : HttpStatus.CREATED;
+        HttpStatus status = response.isDuplicate() ? HttpStatus.OK : HttpStatus.CREATED;
 
         return ResponseEntity.status(status).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<OrderDetailsResponse> getOrder(
-            @PathVariable Long id
-    ) {
+            @PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 }

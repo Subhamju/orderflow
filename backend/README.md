@@ -58,8 +58,8 @@ This setup enables consistent local development and mirrors real-world deploymen
 ---
 
 ## API Overview
-- `POST /orders` → Place a new order
-- `GET /orders/{id}` → Fetch order details
+- `POST /api/v1/orders` → Place a new order
+- `GET /api/v1/orders/{id}` → Fetch order details
 
 ---
 
