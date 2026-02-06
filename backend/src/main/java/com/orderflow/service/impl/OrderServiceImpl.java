@@ -17,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -29,21 +30,21 @@ public class OrderServiceImpl implements OrderService {
         this.orderRepository = orderRepository;
         this.executionEngine = executionEngine;
     }
+
     @Override
-    public OrderResponse placeOrder(OrderRequest request,String idempotencyKey) {
+    public OrderResponse placeOrder(OrderRequest request, String idempotencyKey) {
 
         validate(request);
 
         Optional<Order> existing = orderRepository.findByUserIdAndIdempotencyKey(
-            request.getUserId(), idempotencyKey);
+                request.getUserId(), idempotencyKey);
 
-        if(existing.isPresent())
-        {
+        if (existing.isPresent()) {
             Order order = existing.get();
-            return new OrderResponse(order.getOrderId(), 
-            order.getOrderStatus(), 
-            "Order already exists",
-        true);
+            return new OrderResponse(order.getOrderId(),
+                    order.getOrderStatus(),
+                    "Order already exists",
+                    true);
         }
 
         Order order = new Order();
@@ -63,17 +64,16 @@ public class OrderServiceImpl implements OrderService {
         try {
             order.transitionTo(OrderStatus.CREATED);
             orderRepository.save(order);
-            
+
         } catch (DataIntegrityViolationException ex) {
             Order winner = orderRepository.findByUserIdAndIdempotencyKey(request.getUserId(),
-             idempotencyKey).orElseThrow(()-> ex);
+                    idempotencyKey).orElseThrow(() -> ex);
 
             return new OrderResponse(winner.getOrderId(),
-             winner.getOrderStatus(), 
-            "Order already exists",
-        true);
+                    winner.getOrderStatus(),
+                    "Order already exists",
+                    true);
         }
-        
 
         order.transitionTo(OrderStatus.VALIDATED);
         orderRepository.save(order);
@@ -91,20 +91,27 @@ public class OrderServiceImpl implements OrderService {
                 order.getOrderId(),
                 ackStatus,
                 "Order Accepted",
-                false
-        );
+                false);
     }
 
     @Override
     public OrderDetailsResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(()->new InvalidOrderException(
+                .orElseThrow(() -> new InvalidOrderException(
                         ErrorCode.ORDER_NOT_FOUND,
                         "Order not found"));
-        return mapToDetailsResponse(order);
+        return mapToOrderDetailsResponse(order);
     }
 
-    private OrderDetailsResponse mapToDetailsResponse(Order order) {
+    @Override
+    public List<OrderDetailsResponse> getAllOrders() {
+        return orderRepository.findAll()
+                .stream()
+                .map(this::mapToOrderDetailsResponse)
+                .toList();
+    }
+
+    private OrderDetailsResponse mapToOrderDetailsResponse(Order order) {
         return new OrderDetailsResponse(
                 order.getOrderId(),
                 order.getOrderStatus(),
@@ -112,18 +119,17 @@ public class OrderServiceImpl implements OrderService {
                 order.getOrderKind(),
                 order.getPrice(),
                 order.getQuantity(),
-                order.getCreatedAt()
-        );
+                order.getCreatedAt());
     }
 
-    private void validate(OrderRequest request){
-        if(request.getQuantity() == null || request.getQuantity() <= 0){
+    private void validate(OrderRequest request) {
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new InvalidOrderException(
                     ErrorCode.INVALID_ORDER,
                     "Quantity must be positive");
         }
-        if(request.getOrderKind().name().equals("LIMIT") &&
-                (request.getPrice() == null || request.getPrice() <= 0)){
+        if (request.getOrderKind().name().equals("LIMIT") &&
+                (request.getPrice() == null || request.getPrice() <= 0)) {
             throw new InvalidOrderException(
                     ErrorCode.INVALID_ORDER,
                     "Price required for LIMIT order");

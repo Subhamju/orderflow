@@ -38,17 +38,17 @@ function OrderList() {
                 <table border="1" cellPadding="8">
                     <thead>
                         <tr>
-                            <th>Order ID</th>
+                            <th>ID</th>
                             <th>Type</th>
                             <th>Kind</th>
-                            <th>Quantity</th>
+                            <th>Qty</th>
                             <th>Price</th>
                             <th>Status</th>
                             <th>Created At</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {orders.map((order) => (
+                        {orders.map(order => (
                             <tr
                                 key={order.orderId}
                                 style={{ cursor: "pointer" }}
