@@ -13,3 +13,7 @@ export const placeOrder = (order, idempotencyKey) => {
 export const fetchOrderById = (id) => {
     return axios.get(`${API_URL}/${id}`);
 }
+
+export const fetchAllOrders = () => {
+    return axios.get(API_URL);
+};
