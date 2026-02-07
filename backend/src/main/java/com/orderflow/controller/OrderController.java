@@ -5,12 +5,15 @@ import com.orderflow.dto.OrderRequest;
 import com.orderflow.dto.OrderResponse;
 import com.orderflow.service.OrderService;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/v1/orders")
@@ -39,7 +42,7 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
-    @GetMapping
+    @GetMapping(value = { "", "/" })
     public ResponseEntity<List<OrderDetailsResponse>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
