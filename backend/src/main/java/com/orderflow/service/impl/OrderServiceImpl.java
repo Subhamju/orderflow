@@ -14,6 +14,8 @@ import com.orderflow.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -109,6 +111,12 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(this::mapToOrderDetailsResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<OrderDetailsResponse> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable)
+                .map(this::mapToOrderDetailsResponse);
     }
 
     private OrderDetailsResponse mapToOrderDetailsResponse(Order order) {

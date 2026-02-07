@@ -14,6 +14,6 @@ export const fetchOrderById = (id) => {
     return axios.get(`${API_URL}/${id}`);
 }
 
-export const fetchAllOrders = () => {
-    return axios.get(API_URL);
+export const fetchAllOrders = (page = 0, size = 10) => {
+    return axios.get(`${API_URL}?page=${page}&size=${size}`);
 };
