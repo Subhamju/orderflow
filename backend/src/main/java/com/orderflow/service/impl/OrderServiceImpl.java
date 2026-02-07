@@ -11,6 +11,8 @@ import com.orderflow.exception.InvalidOrderException;
 import com.orderflow.execution.OrderExecutionEngine;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
+
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -117,6 +119,37 @@ public class OrderServiceImpl implements OrderService {
     public Page<OrderDetailsResponse> getAllOrders(Pageable pageable) {
         return orderRepository.findAll(pageable)
                 .map(this::mapToOrderDetailsResponse);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new InvalidOrderException(
+                        ErrorCode.ORDER_NOT_FOUND,
+                        "Order not found"));
+
+        if (order.getOrderStatus() == OrderStatus.EXECUTED) {
+            throw new InvalidOrderException(
+                    ErrorCode.ORDER_ALREADY_EXECUTED,
+                    "Order already executed, cannot cancel");
+        }
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new InvalidOrderException(
+                    ErrorCode.ORDER_ALREADY_CANCELLED,
+                    "Order already cancelled");
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        return new OrderResponse(
+                order.getOrderId(),
+                OrderStatus.CANCELLED,
+                "Order cancelled successfully",
+                false);
+
     }
 
     private OrderDetailsResponse mapToOrderDetailsResponse(Order order) {

@@ -14,6 +14,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Slf4j
 @RestController
@@ -36,6 +38,12 @@ public class OrderController {
         HttpStatus status = response.isDuplicate() ? HttpStatus.OK : HttpStatus.CREATED;
 
         return ResponseEntity.status(status).body(response);
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id) {
+
+        return ResponseEntity.ok(orderService.cancelOrder(id));
     }
 
     @GetMapping("/{id}")

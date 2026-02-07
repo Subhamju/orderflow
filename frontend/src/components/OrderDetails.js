@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { fetchOrderById } from "../services/orderService";
+import { cancelOrder } from "../services/orderService";
 
 
 function OrderDetails() {
@@ -16,6 +17,19 @@ function OrderDetails() {
         loadOrder();
     }, [id]);
 
+    useEffect(() => {
+        if (!order) return;
+
+        if (
+            order.orderStatus === "EXECUTED" ||
+            order.orderStatus === "CANCELLED"
+        ) return;
+
+        const interval = setInterval(loadOrder, 3000);
+        return () => clearInterval(interval);
+    }, [order]);
+
+
     const loadOrder = async () => {
         try {
             setError("");
@@ -27,6 +41,23 @@ function OrderDetails() {
             setLoading(false)
         }
     };
+
+    const handleCancel = async () => {
+        try {
+            const res = await cancelOrder(order.id);
+            alert(res.data.message);
+
+            // refresh order details
+            loadOrder();
+        } catch (err) {
+            if (err.response?.status === 409) {
+                alert("Order already executed, cannot cancel");
+            } else {
+                alert("Failed to cancel order");
+            }
+        }
+    };
+
 
     if (loading) return <p>Loading order...</p>;
     if (error) return <p style={{ color: "red" }}>{error}</p>
@@ -90,6 +121,18 @@ function OrderDetails() {
             <button onClick={() => window.history.back()}>
                 ← Back
             </button>
+
+            {order.orderStatus !== "EXECUTED" &&
+                order.orderStatus !== "CANCELLED" && (
+                    <button
+                        onClick={handleCancel}
+                        style={{ marginTop: "10px", background: "red", color: "white" }}
+                    >
+                        Cancel Order
+                    </button>
+                )}
+
+
         </div>
     );
 

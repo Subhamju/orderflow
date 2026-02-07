@@ -17,4 +17,6 @@ public interface OrderService {
     List<OrderDetailsResponse> getAllOrders();
 
     Page<OrderDetailsResponse> getAllOrders(Pageable pageable);
+
+    OrderResponse cancelOrder(Long orderId);
 }

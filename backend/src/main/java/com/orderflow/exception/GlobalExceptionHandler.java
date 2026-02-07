@@ -16,11 +16,16 @@ import java.time.LocalDateTime;
 public class GlobalExceptionHandler {
         @ExceptionHandler(InvalidOrderException.class)
         public ResponseEntity<ErrorResponse> handleInvalidOrder(InvalidOrderException ex, HttpServletRequest request) {
+
+                HttpStatus status = ex.getErrorCode() == ErrorCode.ORDER_ALREADY_EXECUTED
+                                ? HttpStatus.CONFLICT
+                                : HttpStatus.BAD_REQUEST;
+
                 ErrorResponse error = new ErrorResponse(ex.getErrorCode().name(),
                                 ex.getMessage(),
                                 LocalDateTime.now(),
                                 request.getRequestURI());
-                return ResponseEntity.badRequest().body(error);
+                return ResponseEntity.status(status).body(error);
         }
 
         @ExceptionHandler(Exception.class)

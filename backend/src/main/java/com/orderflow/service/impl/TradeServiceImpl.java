@@ -2,13 +2,13 @@ package com.orderflow.service.impl;
 
 import com.orderflow.domain.entity.Order;
 import com.orderflow.domain.entity.Trade;
-import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.repository.TradeRepository;
 import com.orderflow.service.TradeService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+
 @Service
 public class TradeServiceImpl implements TradeService {
     private final TradeRepository tradeRepository;

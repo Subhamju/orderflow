@@ -17,3 +17,7 @@ export const fetchOrderById = (id) => {
 export const fetchAllOrders = (page = 0, size = 10, sortField = "createdAt", sortDir = "desc") => {
     return axios.get(`${API_URL}?page=${page}&size=${size}&sort=${sortField},${sortDir}`);
 };
+
+export const cancelOrder = (orderId) => {
+    return axios.post(`${API_URL}/${orderId}/cancel`);
+};
