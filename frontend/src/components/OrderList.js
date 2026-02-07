@@ -7,19 +7,22 @@ function OrderList() {
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [sortField, setSortField] = useState("createdAt");
+    const [sortDir, setSortDir] = useState("desc");
+
     const [error, setError] = useState("");
 
     const navigate = useNavigate();
 
     useEffect(() => {
         loadOrders();
-    }, [page]);
+    }, [page, sortField, sortDir]);
 
     const loadOrders = async () => {
         setLoading(true);
         try {
             const PAGE_SIZE = 10;
-            const response = await fetchAllOrders(page, PAGE_SIZE);
+            const response = await fetchAllOrders(page, PAGE_SIZE, sortField, sortDir);
             setOrders(response.data.content);
             setTotalPages(response.data.totalPages);
         } catch (err) {
@@ -29,6 +32,17 @@ function OrderList() {
             setLoading(false);
         }
     };
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortField(field);
+            setSortDir("asc");
+        }
+        setPage(0); // reset to first page
+    };
+
 
     if (loading) return <p>Loading orders...</p>;
     if (error) return <p style={{ color: "red" }}>{error}</p>;
@@ -44,13 +58,16 @@ function OrderList() {
                     <table border="1" cellPadding="8">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Kind</th>
-                                <th>Qty</th>
-                                <th>Price</th>
-                                <th>Status</th>
-                                <th>Created At</th>
+                                <th onClick={() => handleSort("orderId")}>ID</th>
+                                <th onClick={() => handleSort("orderType")}>Type</th>
+                                <th onClick={() => handleSort("orderKind")}>Kind</th>
+                                <th onClick={() => handleSort("quantity")}>Qty</th>
+                                <th onClick={() => handleSort("price")}>Price</th>
+                                <th onClick={() => handleSort("orderStatus")}>Status</th>
+                                <th onClick={() => handleSort("createdAt")}>
+                                    Created At {sortField === "createdAt" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                                </th>
+
                             </tr>
                         </thead>
                         <tbody>
