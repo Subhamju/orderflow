@@ -18,7 +18,8 @@ function OrderList() {
     const loadOrders = async () => {
         setLoading(true);
         try {
-            const response = await fetchAllOrders(page, 5);
+            const PAGE_SIZE = 10;
+            const response = await fetchAllOrders(page, PAGE_SIZE);
             setOrders(response.data.content);
             setTotalPages(response.data.totalPages);
         } catch (err) {
