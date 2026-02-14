@@ -48,6 +48,8 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
 
             ExecutionStrategy strategy = strategyFactory.getStrategy(dbOrder.getOrderKind());
 
+            Thread.sleep(3000);
+
             ExecutionResult result = strategy.execute(dbOrder);
 
             if (result == ExecutionResult.SUCCESS) {
