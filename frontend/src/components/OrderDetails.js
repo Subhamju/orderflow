@@ -61,7 +61,7 @@ function OrderDetails() {
 
     const handleCancel = async () => {
         try {
-            const res = await cancelOrder(order.id);
+            const res = await cancelOrder(order.orderId);
             alert(res.data.message);
 
             // refresh order details

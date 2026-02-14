@@ -10,3 +10,6 @@ backend/target/
 *.iml
 .idea/
 .vscode/
+
+# Env
+.env
