@@ -1,66 +1,23 @@
 # OrderFlow OMS
 
-OrderFlow is a distributed, event-driven Order Management System (OMS) inspired by real-world trading platforms.
+OrderFlow is a distributed, event-driven **Order Management System (OMS)** inspired by real-world trading platforms.
 
-It demonstrates modern backend system design principles including asynchronous execution, idempotent APIs, Kafka-based event streaming, optimistic concurrency control, and clean separation of concerns.
-
-This project is designed to simulate the core of a trading backend system under realistic distributed conditions.
+The project demonstrates modern backend architecture principles including idempotent APIs, asynchronous processing, Kafka-based event streaming, and clean separation of concerns.
 
 ---
 
-## 🚀 Architecture Overview
+## 🚀 Architecture
 
-OrderFlow follows an event-driven architecture:
+REST API → PostgreSQL → Kafka → Async Execution Engine → Event Timeline
 
-REST API  
-→ Persist Order (PostgreSQL)  
-→ Publish Event to Kafka  
-→ Kafka Consumer Processes Execution  
-→ Update Order State  
-→ Record Immutable Event Timeline  
-
-### Key Architectural Principles
+### Architectural Principles
 
 - Non-blocking order submission
-- Decoupled execution pipeline
-- Event-driven processing via Kafka
-- Idempotent API design
+- Kafka-based decoupled execution pipeline
+- Idempotent API design (exactly-once creation)
+- Event-driven lifecycle tracking
 - Optimistic concurrency control
-- Immutable event timeline (audit trail)
-- Dockerized multi-service deployment
-
----
-
-## 📊 Order Lifecycle
-
-CREATED  
-→ VALIDATED  
-→ SENT_TO_EXECUTOR  
-→ EXECUTING  
-→ EXECUTED  
-
-Or  
-
-→ CANCELLED  
-→ FAILED  
-
-Each transition generates an immutable event stored in `order_events`.
-
----
-
-## 📜 Event Timeline
-
-Every order maintains a complete event history:
-
-- ORDER_PLACED  
-- SENT_TO_EXECUTOR  
-- EXECUTING  
-- EXECUTED  
-- CANCEL_REQUESTED  
-- CANCELLED  
-- FAILED  
-
-This provides full traceability similar to production trading systems.
+- Fully Dockerized infrastructure
 
 ---
 
@@ -84,53 +41,87 @@ This provides full traceability similar to production trading systems.
 ## 📦 Core Features
 
 - Idempotent order placement via `Idempotency-Key`
+- Database-enforced uniqueness guarantee
 - Kafka-based asynchronous execution
 - Strategy-based execution (Market / Limit)
-- Event timeline (audit log)
+- Complete order lifecycle management
+- Event timeline (audit trail)
 - Cancel flow with race-condition protection
-- Optimistic locking (`@Version`)
-- Paginated order listing
-- Dockerized local infrastructure
-
----
-
-## 🧠 Distributed Systems Concepts Demonstrated
-
-- At-least-once event processing
-- Idempotent API guarantees
-- Async execution isolation
-- Consumer group scalability
-- Concurrency conflict handling
-- Schema evolution considerations
-- Service decoupling using message queues
-
----
-
-## 🗂 Project Structure
-
-orderflow/
-├── backend/
-│ ├── src/
-│ └── README.md
-├── frontend/
-│ ├── src/
-│ └── README.md
-└── docker-compose.yml
-
-
----
-
-## 🐳 Running Locally
-
-```bash
-docker compose up --build
+- Pagination support
+- Containerized deployment
 
 ---
 
 ## 🔐 Idempotency Model
 
-- Order creation is idempotent for a given: (userId + Idempotency-Key)
-- Guaranteed by:
-   - Database-level unique constraint
-   - Safe service-layer duplicate handling
-- Ensures exactly-once order creation under retries.
+OrderFlow guarantees **exactly-once order creation**.
+
+How it works:
+
+1. Client sends `Idempotency-Key` header.
+2. A unique database constraint is enforced on `(user_id, idempotency_key)`.
+3. If a duplicate request is received, the existing order is returned.
+4. Execution is not triggered again.
+
+This prevents:
+- Duplicate trades
+- Double-click issues
+- Network retry duplication
+- Concurrent submission race conditions
+
+---
+
+## 🔄 Order Lifecycle
+
+CREATED  
+↓  
+VALIDATED  
+↓  
+SENT_TO_EXECUTOR  
+↓  
+EXECUTING  
+↓  
+EXECUTED / FAILED / CANCELLED  
+
+Each transition is recorded in the **Order Event Timeline** for auditability.
+
+---
+
+## 🗂 Project Structure
+
+orderflow/  
+├── backend/  
+├── frontend/  
+└── docker-compose.yml  
+
+---
+
+## 🐳 Running Locally
+
+Build and start all services:
+
+docker compose up --build
+
+Backend API:
+http://localhost:8080/api/v1
+
+Frontend:
+http://localhost:3000
+
+---
+
+## 🔮 Future Enhancements
+
+- Dead-letter queue (DLQ) for failed executions
+- Retry with exponential backoff
+- Outbox pattern for reliable event publishing
+- Microservices decomposition
+- Kubernetes deployment
+- Observability (Prometheus, Grafana, distributed tracing)
+- CQRS read model optimization
+
+---
+
+## 🎯 Project Vision
+
+OrderFlow is designed to evolve from a monolithic asynchronous system into a scalable, cloud-native, event-driven OMS architecture — mirroring real-world financial trading systems.
