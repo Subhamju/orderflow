@@ -1,108 +1,153 @@
-# OrderFlow
-
-OrderFlow is a backend-focused Order Management and Trade Processing platform inspired by real-world trading systems.
-
-It demonstrates asynchronous processing, clean architecture, and extensible design patterns commonly used in large-scale backend systems.
 
 ---
 
-## Tech Stack
+# 📘 2️⃣ BACKEND README.md (Updated & Polished)
+
+```markdown
+# OrderFlow Backend
+
+OrderFlow backend is a distributed Order Management System (OMS) built using Spring Boot and Kafka.
+
+It demonstrates asynchronous execution, event-driven architecture, idempotent API design, and concurrency-safe state transitions.
+
+---
+
+## 🧱 Tech Stack
+
 - Java 21
-- Spring Boot
+- Spring Boot 3
+- Spring Data JPA
 - PostgreSQL
-- REST APIs
-- ExecutorService (Asynchronous processing)
+- Apache Kafka
+- Docker
+- Maven
 
 ---
 
-## High-Level Architecture
-- Layered Spring Boot application (Controller → Service → Execution Engine)
-- Order submission is decoupled from order execution to avoid blocking request threads
-- Asynchronous execution engine processes orders in background worker threads
-- Strategy pattern is used to support different order execution behaviors
+## 🏗 High-Level Architecture
+
+Controller → Service → Kafka Producer → Kafka Consumer → Execution Engine → Database
+
+Order submission is decoupled from execution to avoid blocking request threads and improve scalability.
 
 ---
 
-## Core Features
-- Place orders via REST APIs
-- Asynchronous order execution using a dedicated thread pool
-- Strategy-based execution (Market / Limit)
-- Order lifecycle management (CREATED → EXECUTING → EXECUTED / FAILED)
-- Structured error responses with error codes
-- DTO-based API contracts (command vs query separation)
+## 📊 Order Lifecycle
+
+CREATED  
+→ VALIDATED  
+→ SENT_TO_EXECUTOR  
+→ EXECUTING  
+→ EXECUTED  
+→ CANCELLED / FAILED  
 
 ---
 
-## Design Highlights
-- Clear separation of concerns across layers
-- Asynchronous execution to improve throughput and protect request threads
-- Strategy pattern for extensibility without modifying core logic
-- Command vs Query DTO separation for clean API contracts
-- Centralized exception handling with structured error responses
-- Concurrency handled using ExecutorService to isolate execution workloads
-- **Idempotent order placement using client-supplied Idempotency-Key**
-- **Database-enforced uniqueness to guarantee exactly-once order creation**
+## 📜 Event Timeline
+
+Each order stores immutable events in `order_events` table:
+
+- ORDER_PLACED
+- SENT_TO_EXECUTOR
+- EXECUTING
+- EXECUTED
+- CANCEL_REQUESTED
+- CANCELLED
+- FAILED
+
+This enables full auditability and replay capability.
 
 ---
 
-## Deployment
+## 🔁 Idempotent Order Placement
 
-The application is fully Dockerized and can be run locally using Docker Compose.
+`POST /api/v1/orders`
 
-- Spring Boot backend and PostgreSQL run as separate containers
-- Environment-based configuration is used for database connectivity
-- Docker Compose manages service orchestration and networking
+Supports idempotency using `Idempotency-Key` header.
 
-This setup enables consistent local development and mirrors real-world deployment practices.
+For a given `(userId, Idempotency-Key)`:
 
----
+- Only one order is created
+- Duplicate retries return the original order
+- Duplicate executions are prevented
 
-## API Overview
-- `POST /api/v1/orders` → Place a new order
-- `GET /api/v1/orders/{id}` → Fetch order details
-
----
-
-## API Semantics
-
-### Idempotent Order Placement
-
-The `POST /orders` endpoint supports **idempotent order creation** using the
-`Idempotency-Key` request header.
-
-- For a given `(userId, Idempotency-Key)` combination, only **one order** is created.
-- Retrying the same request with the same key returns the **original order**.
-- Duplicate requests do **not** trigger duplicate executions.
-
-Idempotency is enforced using:
-- A **database-level unique constraint** on `(user_id, idempotency_key)`
-- **Service-layer logic** to safely handle concurrent requests
-
-This guarantees **exactly-once order creation** even under retries or concurrent submissions.
+Enforced via:
+- Database-level unique constraint
+- Service-layer duplicate detection
 
 ---
 
-## Credentials & Configuration
+## 🚀 Async Execution (Kafka-Based)
 
-This project uses **environment-based configuration** for database connectivity.
+Flow:
 
-- Database credentials are **not hardcoded** in the application or Docker image.
-- Credentials are injected at runtime using **environment variables** via Docker Compose.
-- A local `.env` file can be used for convenience and is **excluded from version control**.
+1. Order is persisted
+2. Event published to Kafka topic `order-execution`
+3. Kafka consumer processes message
+4. Execution engine updates order status
+5. Event recorded
 
-This approach ensures that:
-- Docker images remain environment-agnostic
-- Sensitive information is not committed to source control
-- Configuration can vary across environments (local, CI, production)
-
-> **Note:** The credentials used in this repository are **dummy values for demonstration purposes only** and must be replaced with secure secrets in real deployments.
+This ensures:
+- Non-blocking REST calls
+- Scalable execution
+- Decoupled services
 
 ---
 
-## Future Enhancements
-- Kafka-based event-driven execution
-- Retry and failure handling with dead-letter queues
-- Microservices decomposition
-- Cloud deployment
+## 🧠 Concurrency Handling
 
-These enhancements are planned to demonstrate system evolution from a monolith to a scalable, event-driven architecture.
+Optimistic locking (`@Version`) is used to prevent race conditions between:
+
+- Kafka execution thread
+- Cancel API thread
+
+If a stale update occurs:
+- `OptimisticLockingFailureException` is thrown
+- Order state integrity is preserved
+
+---
+
+## 🧩 Strategy Pattern
+
+Execution behavior is extensible via:
+
+- `ExecutionStrategy` interface
+- MarketExecutionStrategy
+- LimitExecutionStrategy
+
+Allows adding new order types without modifying core logic.
+
+---
+
+## 🐳 Deployment
+
+The backend is fully Dockerized.
+
+Docker Compose runs:
+
+- Backend
+- PostgreSQL
+- Kafka
+- Zookeeper
+
+Environment variables are used for configuration.
+
+---
+
+## 📌 API Endpoints
+
+POST `/api/v1/orders` → Place order  
+GET `/api/v1/orders/{id}` → Get order details  
+GET `/api/v1/orders` → Paginated orders  
+POST `/api/v1/orders/{id}/cancel` → Cancel order  
+GET `/api/v1/orders/{id}/events` → Fetch order timeline  
+
+---
+
+## 🔮 Future Improvements
+
+- Dead Letter Queue (DLQ)
+- Retry logic with backoff
+- Outbox pattern
+- Exactly-once semantics exploration
+- Kubernetes deployment
