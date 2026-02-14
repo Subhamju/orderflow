@@ -1,11 +1,15 @@
 package com.orderflow.controller;
 
+import com.orderflow.domain.entity.OrderEvent;
 import com.orderflow.dto.OrderDetailsResponse;
 import com.orderflow.dto.OrderRequest;
 import com.orderflow.dto.OrderResponse;
+import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.service.OrderService;
 
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @RestController
@@ -24,9 +30,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderEventRepository orderEventRepository;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, OrderEventRepository orderEventRepository) {
         this.orderService = orderService;
+        this.orderEventRepository = orderEventRepository;
     }
 
     @PostMapping
@@ -56,6 +64,11 @@ public class OrderController {
     public ResponseEntity<Page<OrderDetailsResponse>> getAllOrders(
             @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
+    }
+
+    @GetMapping("/{id}/events")
+    public ResponseEntity<List<OrderEvent>> getOrderEvents(@PathVariable Long id) {
+        return ResponseEntity.ok(orderEventRepository.findByOrderIdOrderByCreatedAtAsc(id));
     }
 
 }

@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.dto.OrderResponse;
+import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.service.OrderService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,44 +22,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(OrderController.class)
 class OrderControlllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockBean
-    private OrderService orderService;
+        @MockBean
+        private OrderService orderService;
+        @MockBean
+        private OrderEventRepository orderEventRepository;
 
-    @Test
-    void shouldReturn201ForFirstOrder() throws Exception{
+        @Test
+        void shouldReturn201ForFirstOrder() throws Exception {
 
-        OrderResponse response =
-                new OrderResponse(1L, OrderStatus.SENT_TO_EXECUTOR,
-                        "Order Accepted", false);
-        
-        when(orderService.placeOrder(any(),anyString()))
-        .thenReturn(response);
+                OrderResponse response = new OrderResponse(1L, OrderStatus.SENT_TO_EXECUTOR,
+                                "Order Accepted", false);
 
-        mockMvc.perform(post("/orders")
-                        .header("Idempotency-Key","Key-123")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                        .andExpect(status().isCreated());
-    }
+                when(orderService.placeOrder(any(), anyString()))
+                                .thenReturn(response);
 
-    @Test
-    void shouldReturn200ForDuplicateOrder() throws Exception {
+                mockMvc.perform(post("/api/v1/orders")
+                                .header("Idempotency-Key", "Key-123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                                .andExpect(status().isCreated());
+        }
 
-        OrderResponse response =
-                new OrderResponse(1L, OrderStatus.SENT_TO_EXECUTOR,
-                        "Order already exists", true);
+        @Test
+        void shouldReturn200ForDuplicateOrder() throws Exception {
 
-        when(orderService.placeOrder(any(), anyString()))
-                .thenReturn(response);
+                OrderResponse response = new OrderResponse(1L, OrderStatus.SENT_TO_EXECUTOR,
+                                "Order already exists", true);
 
-        mockMvc.perform(post("/orders")
-                        .header("Idempotency-Key", "key-123")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isOk());
-    }
-    
+                when(orderService.placeOrder(any(), anyString()))
+                                .thenReturn(response);
+
+                mockMvc.perform(post("/api/v1/orders")
+                                .header("Idempotency-Key", "key-123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                                .andExpect(status().isOk());
+        }
+
 }

@@ -1,6 +1,8 @@
 package com.orderflow.service.impl;
 
 import com.orderflow.domain.entity.Order;
+import com.orderflow.domain.entity.OrderEvent;
+import com.orderflow.domain.enums.OrderEventType;
 import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.dto.OrderDetailsResponse;
@@ -9,12 +11,14 @@ import com.orderflow.dto.OrderResponse;
 import com.orderflow.exception.ErrorCode;
 import com.orderflow.exception.InvalidOrderException;
 import com.orderflow.execution.OrderExecutionEngine;
+import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
+import org.aspectj.weaver.ast.Or;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,10 +33,13 @@ import java.util.Optional;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderExecutionEngine executionEngine;
+    private final OrderEventRepository orderEventRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderExecutionEngine executionEngine) {
+    public OrderServiceImpl(OrderRepository orderRepository, OrderExecutionEngine executionEngine,
+            OrderEventRepository orderEventRepository) {
         this.orderRepository = orderRepository;
         this.executionEngine = executionEngine;
+        this.orderEventRepository = orderEventRepository;
     }
 
     @Override
@@ -68,6 +75,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             order.transitionTo(OrderStatus.CREATED);
             orderRepository.save(order);
+            recordEvent(order.getOrderId(), OrderEventType.ORDER_PLACED);
 
         } catch (DataIntegrityViolationException ex) {
             Order winner = orderRepository.findByUserIdAndIdempotencyKey(request.getUserId(),
@@ -84,6 +92,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.transitionTo(OrderStatus.SENT_TO_EXECUTOR);
         orderRepository.save(order);
+
+        recordEvent(order.getOrderId(), OrderEventType.SENT_TO_EXECUTOR);
 
         OrderStatus ackStatus = order.getOrderStatus();
 
@@ -141,8 +151,12 @@ public class OrderServiceImpl implements OrderService {
                     "Order already cancelled");
         }
 
+        recordEvent(order.getOrderId(), OrderEventType.CANCEL_REQUESTED);
+
         order.setOrderStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+
+        recordEvent(order.getOrderId(), OrderEventType.CANCELLED);
 
         return new OrderResponse(
                 order.getOrderId(),
@@ -176,4 +190,9 @@ public class OrderServiceImpl implements OrderService {
                     "Price required for LIMIT order");
         }
     }
+
+    private void recordEvent(Long orderId, OrderEventType type) {
+        orderEventRepository.save(new OrderEvent(orderId, type));
+    }
+
 }

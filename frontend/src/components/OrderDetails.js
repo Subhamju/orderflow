@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchOrderById } from "../services/orderService";
-import { cancelOrder } from "../services/orderService";
+import {
+    fetchOrderById,
+    cancelOrder,
+    fetchOrderEvents
+} from "../services/orderService";
 
 
 function OrderDetails() {
@@ -10,11 +13,13 @@ function OrderDetails() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [events, setEvents] = useState([]);
 
     useEffect(() => {
         setLoading(true);
         setError("");
         loadOrder();
+        loadEvents();
     }, [id]);
 
     useEffect(() => {
@@ -25,7 +30,10 @@ function OrderDetails() {
             order.orderStatus === "CANCELLED"
         ) return;
 
-        const interval = setInterval(loadOrder, 3000);
+        const interval = setInterval(() => {
+            loadOrder();
+            loadEvents();
+        }, 3000);
         return () => clearInterval(interval);
     }, [order]);
 
@@ -41,6 +49,15 @@ function OrderDetails() {
             setLoading(false)
         }
     };
+
+    const loadEvents = async () => {
+        try {
+            const response = await fetchOrderEvents(id);
+            setEvents(response.data);
+        } catch (err) {
+            console.error("Failed to load events");
+        }
+    }
 
     const handleCancel = async () => {
         try {
@@ -101,11 +118,13 @@ function OrderDetails() {
                                     padding: "4px 8px",
                                     borderRadius: "4px",
                                     backgroundColor:
-                                        order.status === "NEW"
+                                        order.orderStatus === "SENT_TO_EXECUTOR"
                                             ? "#cce5ff"
-                                            : order.status === "FILLED"
+                                            : order.orderStatus === "EXECUTED"
                                                 ? "#d4edda"
-                                                : "#e2e3e5"
+                                                : order.orderStatus === "CANCELLED"
+                                                    ? "#f8d7da"
+                                                    : "#e2e3e5"
                                 }}
                             >
                                 {order.orderStatus}
@@ -131,6 +150,32 @@ function OrderDetails() {
                         Cancel Order
                     </button>
                 )}
+
+            <h3 style={{ marginTop: "30px" }}>Order Timeline</h3>
+
+            {events.length === 0 ? (
+                <p>No events recorded</p>
+            ) : (
+                <ul style={{ listStyle: "none", padding: 0 }}>
+                    {events.map((event) => (
+                        <li
+                            key={event.id}
+                            style={{
+                                marginBottom: "10px",
+                                padding: "10px",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px"
+                            }}
+                        >
+                            <strong>{event.eventType}</strong>
+                            <div style={{ fontSize: "12px", color: "gray" }}>
+                                {new Date(event.createdAt).toLocaleString()}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
 
 
         </div>
