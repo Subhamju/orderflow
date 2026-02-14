@@ -5,5 +5,6 @@ public enum OrderEventType {
     SENT_TO_EXECUTOR,
     EXECUTED,
     CANCEL_REQUESTED,
-    CANCELLED
+    CANCELLED,
+    FAILED
 }

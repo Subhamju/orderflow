@@ -9,8 +9,6 @@ import com.orderflow.execution.strategy.ExecutionStrategyFactory;
 import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 
-import ch.qos.logback.core.spi.ConfigurationEvent.EventType;
-
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ExecutorService;
@@ -36,6 +34,14 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
     public void execute(Order order) {
         executorService.submit(() -> {
             try {
+
+                Order dbOrder = orderRepository.findById(order.getOrderId()).orElseThrow();
+
+                if (dbOrder.getOrderStatus() == OrderStatus.CANCELLED) {
+                    log.info("Order {} was cancelled before execution", dbOrder.getOrderId());
+                    return;
+                }
+
                 order.transitionTo(OrderStatus.EXECUTING);
                 orderRepository.save(order);
 
@@ -49,6 +55,8 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
 
                 } else {
                     order.transitionTo(OrderStatus.FAILED);
+                    orderEventRepository.save(
+                            new OrderEvent(order.getOrderId(), OrderEventType.FAILED));
                 }
                 orderRepository.save(order);
 
