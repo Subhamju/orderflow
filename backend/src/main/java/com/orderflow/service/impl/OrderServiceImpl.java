@@ -10,15 +10,13 @@ import com.orderflow.dto.OrderRequest;
 import com.orderflow.dto.OrderResponse;
 import com.orderflow.exception.ErrorCode;
 import com.orderflow.exception.InvalidOrderException;
-import com.orderflow.execution.OrderExecutionEngine;
+import com.orderflow.kafka.OrderKafkaProducer;
 import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-
-import org.aspectj.weaver.ast.Or;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,14 +30,14 @@ import java.util.Optional;
 @Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final OrderExecutionEngine executionEngine;
     private final OrderEventRepository orderEventRepository;
+    private final OrderKafkaProducer orderKafkaProducer;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderExecutionEngine executionEngine,
-            OrderEventRepository orderEventRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository,
+            OrderEventRepository orderEventRepository, OrderKafkaProducer orderKafkaProducer) {
         this.orderRepository = orderRepository;
-        this.executionEngine = executionEngine;
         this.orderEventRepository = orderEventRepository;
+        this.orderKafkaProducer = orderKafkaProducer;
     }
 
     @Override
@@ -97,7 +95,7 @@ public class OrderServiceImpl implements OrderService {
 
         OrderStatus ackStatus = order.getOrderStatus();
 
-        executionEngine.execute(order);
+        orderKafkaProducer.publishOrderForExecution(order);
 
         log.info("Order {} accepted for execution", order.getOrderId());
 

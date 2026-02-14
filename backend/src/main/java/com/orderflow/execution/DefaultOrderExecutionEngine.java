@@ -9,64 +9,64 @@ import com.orderflow.execution.strategy.ExecutionStrategyFactory;
 import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 
+import jakarta.transaction.Transactional;
+
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
-    private final ExecutorService executorService;
     private final ExecutionStrategyFactory strategyFactory;
     private final OrderRepository orderRepository;
     private final OrderEventRepository orderEventRepository;
 
-    public DefaultOrderExecutionEngine(ExecutorService executorService, ExecutionStrategyFactory strategyFactory,
+    public DefaultOrderExecutionEngine(ExecutionStrategyFactory strategyFactory,
             OrderRepository orderRepository, OrderEventRepository orderEventRepository) {
-        this.executorService = executorService;
         this.strategyFactory = strategyFactory;
         this.orderRepository = orderRepository;
         this.orderEventRepository = orderEventRepository;
     }
 
     @Override
+    @Transactional
     public void execute(Order order) {
-        executorService.submit(() -> {
-            try {
 
-                Order dbOrder = orderRepository.findById(order.getOrderId()).orElseThrow();
+        Order dbOrder = orderRepository.findById(order.getOrderId())
+                .orElseThrow();
 
-                if (dbOrder.getOrderStatus() == OrderStatus.CANCELLED) {
-                    log.info("Order {} was cancelled before execution", dbOrder.getOrderId());
-                    return;
-                }
+        if (dbOrder.getOrderStatus() == OrderStatus.CANCELLED) {
+            log.info("Order {} cancelled before execution", dbOrder.getOrderId());
+            return;
+        }
 
-                order.transitionTo(OrderStatus.EXECUTING);
-                orderRepository.save(order);
+        try {
+            dbOrder.transitionTo(OrderStatus.EXECUTING);
+            orderRepository.save(dbOrder);
+            recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTING);
 
-                ExecutionStrategy strategy = strategyFactory.getStrategy(order.getOrderKind());
+            ExecutionStrategy strategy = strategyFactory.getStrategy(dbOrder.getOrderKind());
 
-                ExecutionResult result = strategy.execute(order);
-                if (result == ExecutionResult.SUCCESS) {
-                    order.transitionTo(OrderStatus.EXECUTED);
-                    orderEventRepository.save(
-                            new OrderEvent(order.getOrderId(), OrderEventType.EXECUTED));
+            ExecutionResult result = strategy.execute(dbOrder);
 
-                } else {
-                    order.transitionTo(OrderStatus.FAILED);
-                    orderEventRepository.save(
-                            new OrderEvent(order.getOrderId(), OrderEventType.FAILED));
-                }
-                orderRepository.save(order);
-
-            } catch (Exception ex) {
-                log.error("Execution failed for order {}", order.getOrderId(), ex);
-                order.transitionTo(OrderStatus.FAILED);
-                orderRepository.save(order);
+            if (result == ExecutionResult.SUCCESS) {
+                dbOrder.transitionTo(OrderStatus.EXECUTED);
+                recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTED);
+            } else {
+                dbOrder.transitionTo(OrderStatus.FAILED);
+                recordEvent(dbOrder.getOrderId(), OrderEventType.FAILED);
             }
 
-        });
+            orderRepository.save(dbOrder);
 
+        } catch (Exception ex) {
+            log.error("Execution failed for order {}", order.getOrderId(), ex);
+        }
     }
+
+    private void recordEvent(Long orderId, OrderEventType type) {
+        orderEventRepository.save(new OrderEvent(orderId, type));
+    }
+
 }
