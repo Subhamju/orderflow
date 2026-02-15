@@ -4,40 +4,34 @@ import com.orderflow.domain.entity.Order;
 import com.orderflow.domain.entity.OrderEvent;
 import com.orderflow.domain.enums.OrderEventType;
 import com.orderflow.domain.enums.OrderStatus;
-import com.orderflow.execution.strategy.ExecutionStrategy;
-import com.orderflow.execution.strategy.ExecutionStrategyFactory;
+import com.orderflow.matching.MatchingEngine;
 import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 
-import jakarta.transaction.Transactional;
-
 import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
-    private final ExecutionStrategyFactory strategyFactory;
+
+    private final MatchingEngine matchingEngine;
     private final OrderRepository orderRepository;
     private final OrderEventRepository orderEventRepository;
 
-    public DefaultOrderExecutionEngine(ExecutionStrategyFactory strategyFactory,
-            OrderRepository orderRepository, OrderEventRepository orderEventRepository) {
-        this.strategyFactory = strategyFactory;
-        this.orderRepository = orderRepository;
-        this.orderEventRepository = orderEventRepository;
-    }
-
     @Override
-    @Transactional
-    public void execute(Order order) {
+    public void execute(Long orderId) {
 
-        Order dbOrder = orderRepository.findById(order.getOrderId())
+        Order dbOrder = orderRepository.findById(orderId)
                 .orElseThrow();
 
-        if (dbOrder.getOrderStatus() == OrderStatus.CANCELLED) {
-            log.info("Order {} cancelled before execution", dbOrder.getOrderId());
+        if (dbOrder.getOrderStatus() != OrderStatus.SENT_TO_EXECUTOR) {
+            log.info("Order {} not executable. Current state: {}",
+                    dbOrder.getOrderId(),
+                    dbOrder.getOrderStatus());
             return;
         }
 
@@ -46,24 +40,23 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
             orderRepository.save(dbOrder);
             recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTING);
 
-            ExecutionStrategy strategy = strategyFactory.getStrategy(dbOrder.getOrderKind());
+            matchingEngine.match(dbOrder);
 
-            Thread.sleep(3000);
-
-            ExecutionResult result = strategy.execute(dbOrder);
-
-            if (result == ExecutionResult.SUCCESS) {
+            if (dbOrder.getRemainingQuantity() == 0) {
                 dbOrder.transitionTo(OrderStatus.EXECUTED);
                 recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTED);
-            } else {
-                dbOrder.transitionTo(OrderStatus.FAILED);
-                recordEvent(dbOrder.getOrderId(), OrderEventType.FAILED);
+            } else if (dbOrder.getRemainingQuantity() < dbOrder.getQuantity()) {
+                dbOrder.transitionTo(OrderStatus.PARTIALLY_FILLED);
+                recordEvent(dbOrder.getOrderId(), OrderEventType.PARTIALLY_FILLED);
             }
 
             orderRepository.save(dbOrder);
 
         } catch (Exception ex) {
-            log.error("Execution failed for order {}", order.getOrderId(), ex);
+            log.error("Execution failed for order {}", orderId, ex);
+            dbOrder.transitionTo(OrderStatus.FAILED);
+            recordEvent(dbOrder.getOrderId(), OrderEventType.FAILED);
+            orderRepository.save(dbOrder);
         }
     }
 

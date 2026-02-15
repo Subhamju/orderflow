@@ -2,8 +2,7 @@ package com.orderflow.kafka;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-
-import com.orderflow.domain.entity.Order;
+import com.orderflow.kafka.dto.OrderExecutionEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -11,10 +10,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderKafkaProducer {
 
-    private final KafkaTemplate<String, Order> kafkaTemplate;
+    private final KafkaTemplate<String, OrderExecutionEvent> kafkaTemplate;
 
-    public void publishOrderForExecution(Order order) {
-        kafkaTemplate.send("order.execution", order.getOrderId().toString(), order);
+    public void publishOrderForExecution(Long orderId) {
+        OrderExecutionEvent event = new OrderExecutionEvent(orderId);
+        kafkaTemplate.send("order.execution", event);
     }
 
 }

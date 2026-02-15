@@ -35,6 +35,16 @@ public class Order {
     @Version
     private Long version;
 
+    private Integer remainingQuantity;
+
+    public Integer getRemainingQuantity() {
+        return remainingQuantity;
+    }
+
+    public void setRemainingQuantity(Integer remainingQuantity) {
+        this.remainingQuantity = remainingQuantity;
+    }
+
     public String getIdempotencyKey() {
         return idempotencyKey;
     }

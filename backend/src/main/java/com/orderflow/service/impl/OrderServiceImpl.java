@@ -70,6 +70,7 @@ public class OrderServiceImpl implements OrderService {
             // MARKET order: price is not applicable
             order.setPrice(null);
         }
+        order.setRemainingQuantity(request.getQuantity());
         try {
             order.transitionTo(OrderStatus.CREATED);
             orderRepository.save(order);
@@ -95,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
 
         OrderStatus ackStatus = order.getOrderStatus();
 
-        orderKafkaProducer.publishOrderForExecution(order);
+        orderKafkaProducer.publishOrderForExecution(order.getOrderId());
 
         log.info("Order {} accepted for execution", order.getOrderId());
 
