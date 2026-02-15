@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByUserIdAndIdempotencyKey(
@@ -34,5 +35,27 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             ORDER BY o.price DESC, o.createdAt ASC
             """)
     List<Order> findMatchingBuyOrders(Long instrumentId, Double price);
+
+    // BEST BUY ORDERS (for incoming SELL)
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.instrumentId = :instrumentId
+                  AND o.orderType = 'BUY'
+                  AND o.orderStatus IN ('SENT_TO_EXECUTOR','EXECUTING','PARTIALLY_FILLED')
+                  AND o.remainingQuantity > 0
+                ORDER BY o.price DESC, o.createdAt ASC
+            """)
+    List<Order> findBestBuyOrders(@Param("instrumentId") Long instrumentId);
+
+    // BEST SELL ORDERS (for incoming BUY)
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.instrumentId = :instrumentId
+                  AND o.orderType = 'SELL'
+                  AND o.orderStatus IN ('SENT_TO_EXECUTOR','EXECUTING','PARTIALLY_FILLED')
+                  AND o.remainingQuantity > 0
+                ORDER BY o.price ASC, o.createdAt ASC
+            """)
+    List<Order> findBestSellOrders(@Param("instrumentId") Long instrumentId);
 
 }

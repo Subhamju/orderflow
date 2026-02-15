@@ -138,21 +138,23 @@ public class OrderServiceImpl implements OrderService {
                         ErrorCode.ORDER_NOT_FOUND,
                         "Order not found"));
 
-        if (order.getOrderStatus() == OrderStatus.EXECUTED) {
-            throw new InvalidOrderException(
-                    ErrorCode.ORDER_ALREADY_EXECUTED,
-                    "Order already executed, cannot cancel");
-        }
+        OrderStatus status = order.getOrderStatus();
 
-        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+        if (status == OrderStatus.EXECUTED ||
+                status == OrderStatus.CANCELLED ||
+                status == OrderStatus.PARTIALLY_CANCELLED) {
             throw new InvalidOrderException(
-                    ErrorCode.ORDER_ALREADY_CANCELLED,
-                    "Order already cancelled");
+                    ErrorCode.INVALID_ORDER,
+                    "Order cannot be cancelled in current state: " + status);
         }
 
         recordEvent(order.getOrderId(), OrderEventType.CANCEL_REQUESTED);
 
-        order.setOrderStatus(OrderStatus.CANCELLED);
+        if (order.getRemainingQuantity() < order.getQuantity()) {
+            order.transitionTo(OrderStatus.PARTIALLY_CANCELLED);
+        } else {
+            order.transitionTo(OrderStatus.CANCELLED);
+        }
         orderRepository.save(order);
 
         recordEvent(order.getOrderId(), OrderEventType.CANCELLED);

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.orderflow.domain.entity.Order;
 import com.orderflow.domain.entity.Trade;
+import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderStatus;
 import com.orderflow.domain.enums.OrderType;
 import com.orderflow.repository.OrderRepository;
@@ -25,74 +26,140 @@ public class MatchingEngine {
     @Transactional
     public void match(Order incomingOrder) {
 
-        if (incomingOrder.getOrderType() == OrderType.BUY) {
-            matchBuyOrder(incomingOrder);
-        } else {
-            matchSellOrder(incomingOrder);
-        }
+        List<Order> bookOrders = findMatchingOrders(incomingOrder);
 
-    }
+        for (Order counterOrder : bookOrders) {
 
-    private void matchSellOrder(Order sellOrder) {
-
-        List<Order> buyOrders = orderRepository.findMatchingBuyOrders(
-                sellOrder.getInstrumentId(),
-                sellOrder.getPrice());
-
-        for (Order buy : buyOrders) {
-            if (sellOrder.getRemainingQuantity() == 0)
+            if (incomingOrder.getRemainingQuantity() == 0) {
                 break;
+            }
 
-            int tradeQty = Math.min(sellOrder.getRemainingQuantity(), buy.getRemainingQuantity());
-
-            executeTrade(buy, sellOrder, tradeQty, buy.getPrice());
-        }
-        finalizeOrderStatus(sellOrder);
-    }
-
-    private void matchBuyOrder(Order buyOrder) {
-        List<Order> sellOrders = orderRepository.findMatchingSellOrders(
-                buyOrder.getInstrumentId(),
-                buyOrder.getPrice());
-
-        for (Order sell : sellOrders) {
-            if (buyOrder.getRemainingQuantity() == 0)
+            if (!isPriceMatch(incomingOrder, counterOrder)) {
                 break;
+            }
 
-            int tradeQty = Math.min(buyOrder.getRemainingQuantity(), sell.getRemainingQuantity());
+            int tradeQty = Math.min(
+                    incomingOrder.getRemainingQuantity(),
+                    counterOrder.getRemainingQuantity());
 
-            executeTrade(buyOrder, sell, tradeQty, sell.getPrice());
+            double executionPrice = determineExecutionPrice(
+                    incomingOrder,
+                    counterOrder);
+
+            executeTrade(incomingOrder, counterOrder, tradeQty, executionPrice);
         }
 
-        finalizeOrderStatus(buyOrder);
+        finalizeIncomingOrder(incomingOrder);
     }
 
-    private void finalizeOrderStatus(Order order) {
+    private List<Order> findMatchingOrders(Order incoming) {
 
-        if (order.getRemainingQuantity() == 0) {
-            order.transitionTo(OrderStatus.EXECUTED);
+        if (incoming.getOrderType() == OrderType.BUY) {
+            return orderRepository.findBestSellOrders(
+                    incoming.getInstrumentId());
         } else {
-            order.transitionTo(OrderStatus.PARTIALLY_FILLED);
+            return orderRepository.findBestBuyOrders(
+                    incoming.getInstrumentId());
         }
-        orderRepository.save(order);
     }
 
-    private void executeTrade(Order buy, Order sell, int quantity, double price) {
+    private boolean isPriceMatch(Order incoming, Order counter) {
 
-        buy.setRemainingQuantity(buy.getRemainingQuantity() - quantity);
-        sell.setRemainingQuantity(sell.getRemainingQuantity() - quantity);
+        // Prevent MARKET vs MARKET
+        if (incoming.getOrderKind() == OrderKind.MARKET &&
+                counter.getOrderKind() == OrderKind.MARKET) {
+            return false;
+        }
+
+        // MARKET always matches LIMIT
+        if (incoming.getOrderKind() == OrderKind.MARKET)
+            return true;
+
+        if (counter.getOrderKind() == OrderKind.MARKET)
+            return true;
+
+        // LIMIT vs LIMIT
+        if (incoming.getOrderType() == OrderType.BUY) {
+            return incoming.getPrice() >= counter.getPrice();
+        } else {
+            return incoming.getPrice() <= counter.getPrice();
+        }
+    }
+
+    private double determineExecutionPrice(Order incoming, Order counter) {
+
+        if (incoming.getOrderKind() == OrderKind.MARKET)
+            return counter.getPrice();
+
+        if (counter.getOrderKind() == OrderKind.MARKET)
+            return incoming.getPrice();
+
+        // Limit vs Limit → price-time priority
+        return counter.getPrice();
+    }
+
+    private void executeTrade(Order incoming,
+            Order counter,
+            int quantity,
+            double price) {
+
+        incoming.setRemainingQuantity(
+                incoming.getRemainingQuantity() - quantity);
+
+        counter.setRemainingQuantity(
+                counter.getRemainingQuantity() - quantity);
+
+        updateOrderStatus(counter);
 
         Trade trade = new Trade();
-        trade.setBuyOrderId(buy.getOrderId());
-        trade.setSellOrderId(sell.getOrderId());
+        trade.setBuyOrderId(
+                incoming.getOrderType() == OrderType.BUY
+                        ? incoming.getOrderId()
+                        : counter.getOrderId());
+
+        trade.setSellOrderId(
+                incoming.getOrderType() == OrderType.SELL
+                        ? incoming.getOrderId()
+                        : counter.getOrderId());
+
         trade.setQuantity(quantity);
         trade.setPrice(price);
         trade.setExecutedAt(LocalDateTime.now());
 
         tradeRepository.save(trade);
 
-        orderRepository.save(buy);
-        orderRepository.save(sell);
+        orderRepository.save(counter);
     }
 
+    private void updateOrderStatus(Order order) {
+
+        if (order.getRemainingQuantity() == 0 &&
+                order.getOrderStatus() != OrderStatus.EXECUTED) {
+
+            order.transitionTo(OrderStatus.EXECUTED);
+
+        } else if (order.getRemainingQuantity() > 0 &&
+                order.getOrderStatus() != OrderStatus.PARTIALLY_FILLED) {
+
+            order.transitionTo(OrderStatus.PARTIALLY_FILLED);
+        }
+    }
+
+    private void finalizeIncomingOrder(Order order) {
+
+        if (order.getRemainingQuantity() == 0) {
+
+            order.transitionTo(OrderStatus.EXECUTED);
+
+        } else {
+
+            if (order.getOrderKind() == OrderKind.MARKET) {
+                order.transitionTo(OrderStatus.FAILED);
+            } else {
+                order.transitionTo(OrderStatus.PARTIALLY_FILLED);
+            }
+        }
+
+        orderRepository.save(order);
+    }
 }

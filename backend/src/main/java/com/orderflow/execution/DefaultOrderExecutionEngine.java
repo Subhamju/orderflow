@@ -9,6 +9,7 @@ import com.orderflow.repository.OrderEventRepository;
 import com.orderflow.repository.OrderRepository;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
     private final OrderEventRepository orderEventRepository;
 
     @Override
+    @Transactional
     public void execute(Long orderId) {
 
         Order dbOrder = orderRepository.findById(orderId)
@@ -35,29 +37,11 @@ public class DefaultOrderExecutionEngine implements OrderExecutionEngine {
             return;
         }
 
-        try {
-            dbOrder.transitionTo(OrderStatus.EXECUTING);
-            orderRepository.save(dbOrder);
-            recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTING);
+        dbOrder.transitionTo(OrderStatus.EXECUTING);
+        orderRepository.save(dbOrder);
+        recordEvent(orderId, OrderEventType.EXECUTING);
+        matchingEngine.match(dbOrder);
 
-            matchingEngine.match(dbOrder);
-
-            if (dbOrder.getRemainingQuantity() == 0) {
-                dbOrder.transitionTo(OrderStatus.EXECUTED);
-                recordEvent(dbOrder.getOrderId(), OrderEventType.EXECUTED);
-            } else if (dbOrder.getRemainingQuantity() < dbOrder.getQuantity()) {
-                dbOrder.transitionTo(OrderStatus.PARTIALLY_FILLED);
-                recordEvent(dbOrder.getOrderId(), OrderEventType.PARTIALLY_FILLED);
-            }
-
-            orderRepository.save(dbOrder);
-
-        } catch (Exception ex) {
-            log.error("Execution failed for order {}", orderId, ex);
-            dbOrder.transitionTo(OrderStatus.FAILED);
-            recordEvent(dbOrder.getOrderId(), OrderEventType.FAILED);
-            orderRepository.save(dbOrder);
-        }
     }
 
     private void recordEvent(Long orderId, OrderEventType type) {

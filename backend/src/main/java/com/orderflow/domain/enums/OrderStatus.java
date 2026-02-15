@@ -6,6 +6,7 @@ public enum OrderStatus {
     SENT_TO_EXECUTOR,
     EXECUTING,
     PARTIALLY_FILLED,
+    PARTIALLY_CANCELLED,
     EXECUTED,
     REJECTED,
     FAILED,

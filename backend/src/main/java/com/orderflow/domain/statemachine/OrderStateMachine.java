@@ -13,8 +13,10 @@ public final class OrderStateMachine {
             OrderStatus.EXECUTING,
             Set.of(OrderStatus.EXECUTED, OrderStatus.PARTIALLY_FILLED, OrderStatus.FAILED, OrderStatus.CANCELLED),
             OrderStatus.PARTIALLY_FILLED,
-            Set.of(OrderStatus.PARTIALLY_FILLED, OrderStatus.EXECUTED, OrderStatus.FAILED, OrderStatus.CANCELLED),
+            Set.of(OrderStatus.PARTIALLY_FILLED, OrderStatus.EXECUTED, OrderStatus.FAILED,
+                    OrderStatus.PARTIALLY_CANCELLED),
             OrderStatus.EXECUTED, Set.of(),
+            OrderStatus.PARTIALLY_CANCELLED, Set.of(),
             OrderStatus.CANCELLED, Set.of(),
             OrderStatus.FAILED, Set.of(),
             OrderStatus.REJECTED, Set.of());
