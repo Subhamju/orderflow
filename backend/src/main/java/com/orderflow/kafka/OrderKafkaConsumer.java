@@ -1,9 +1,8 @@
 package com.orderflow.kafka;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-
-import com.orderflow.domain.entity.Order;
 import com.orderflow.execution.OrderExecutionEngine;
 import com.orderflow.kafka.dto.OrderExecutionEvent;
 
@@ -13,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Profile("!test")
 public class OrderKafkaConsumer {
 
     private final OrderExecutionEngine executionEngine;

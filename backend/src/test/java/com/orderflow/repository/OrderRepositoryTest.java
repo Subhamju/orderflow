@@ -26,7 +26,7 @@ class OrderRepositoryTest {
     }
 
     @Test
-    public void shouldEnforceUniqueConstraintOnUserAndIdempotencyKey(){
+    public void shouldEnforceUniqueConstraintOnUserAndIdempotencyKey() {
         Order first = new Order();
         first.setUserId(1L);
         first.setInstrumentId(101L);
@@ -51,9 +51,9 @@ class OrderRepositoryTest {
         duplicate.setOrderStatus(OrderStatus.CREATED);
         duplicate.setCreatedAt(LocalDateTime.now());
 
-        assertThrows(DataIntegrityViolationException.class, 
-            () -> orderRepository.saveAndFlush(duplicate));
+        assertThrows(DataIntegrityViolationException.class,
+                () -> orderRepository.saveAndFlush(duplicate));
 
     }
-    
+
 }

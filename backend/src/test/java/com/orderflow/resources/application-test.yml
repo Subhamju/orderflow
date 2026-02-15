@@ -11,6 +11,10 @@ spring:
     show-sql: false
     database-platform: org.hibernate.dialect.H2Dialect
 
-  sql:
-    init:
-      mode: never
+  kafka:
+    listener:
+      auto-startup: false
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
