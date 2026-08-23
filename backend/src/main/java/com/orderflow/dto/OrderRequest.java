@@ -3,12 +3,14 @@ package com.orderflow.dto;
 import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderType;
 
+import java.math.BigDecimal;
+
 public class OrderRequest {
     private Long userId;
     private Long instrumentId;
     private OrderType orderType;
     private OrderKind orderKind;
-    private Double price;
+    private BigDecimal price;
     private Integer quantity;
 
     public Long getUserId() {
@@ -43,11 +45,11 @@ public class OrderRequest {
         this.orderKind = orderKind;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

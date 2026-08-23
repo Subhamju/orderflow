@@ -6,6 +6,7 @@ import com.orderflow.domain.enums.OrderType;
 import com.orderflow.domain.statemachine.OrderStateMachine;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,7 +24,8 @@ public class Order {
     private OrderType orderType;
     @Enumerated(EnumType.STRING)
     private OrderKind orderKind;
-    private Double price;
+    @Column(precision = 19, scale = 4)
+    private BigDecimal price;
     private Integer quantity;
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
@@ -93,11 +95,11 @@ public class Order {
         this.orderKind = orderKind;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

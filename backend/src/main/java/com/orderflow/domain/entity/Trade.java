@@ -2,6 +2,7 @@ package com.orderflow.domain.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,7 +13,8 @@ public class Trade {
     private Long tradeId;
     private Long buyOrderId;
     private Long sellOrderId;
-    private Double price;
+    @Column(precision = 19, scale = 4, nullable = false)
+    private BigDecimal price;
     private Integer quantity;
     private LocalDateTime executedAt;
 
@@ -40,11 +42,11 @@ public class Trade {
         this.sellOrderId = sellOrderId;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

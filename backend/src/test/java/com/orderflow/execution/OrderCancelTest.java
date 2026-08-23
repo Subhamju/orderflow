@@ -2,6 +2,8 @@ package com.orderflow.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +30,7 @@ public class OrderCancelTest {
     @Test
     void shouldCancelUnfilledOrder() {
 
-        Order order = OrderTestFactory.limitBuy(100, 40.0);
+        Order order = OrderTestFactory.limitBuy(100, new BigDecimal("40.00"));
         orderRepository.save(order);
 
         orderService.cancelOrder(order.getOrderId());
@@ -41,7 +43,7 @@ public class OrderCancelTest {
     @Test
     void shouldMarkPartiallyCancelledWhenPartiallyFilled() {
 
-        Order order = OrderTestFactory.limitBuy(100, 40.0);
+        Order order = OrderTestFactory.limitBuy(100, new BigDecimal("40.00"));
         order.transitionTo(OrderStatus.EXECUTING);
         orderRepository.save(order);
 

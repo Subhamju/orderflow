@@ -2,6 +2,7 @@ package com.orderflow.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,8 +31,8 @@ class MatchingEngineTest {
     @Test
     void shouldFullyMatchBuyAndSellOrders() {
 
-        Order buy = OrderTestFactory.limitBuy(100, 40.0);
-        Order sell = OrderTestFactory.limitSell(100, 40.0);
+        Order buy = OrderTestFactory.limitBuy(100, new BigDecimal("40.00"));
+        Order sell = OrderTestFactory.limitSell(100, new BigDecimal("40.00"));
 
         buy.setOrderStatus(OrderStatus.EXECUTING);
         sell.setOrderStatus(OrderStatus.EXECUTING);
@@ -53,8 +54,8 @@ class MatchingEngineTest {
     @Test
     void shouldPartiallyFillOrder() {
 
-        Order buy = OrderTestFactory.limitBuy(100, 40.0);
-        Order sell = OrderTestFactory.limitSell(50, 40.0);
+        Order buy = OrderTestFactory.limitBuy(100, new BigDecimal("40.00"));
+        Order sell = OrderTestFactory.limitSell(50, new BigDecimal("40.00"));
 
         buy.setOrderStatus(OrderStatus.EXECUTING);
         sell.setOrderStatus(OrderStatus.EXECUTING);

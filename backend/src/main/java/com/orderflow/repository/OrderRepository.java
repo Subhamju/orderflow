@@ -2,6 +2,7 @@ package com.orderflow.repository;
 
 import com.orderflow.domain.entity.Order;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +24,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             AND (:price IS NULL OR o.price <= :price)
             ORDER BY o.price ASC, o.createdAt ASC
             """)
-    List<Order> findMatchingSellOrders(Long instrumentId, Double price);
+    List<Order> findMatchingSellOrders(Long instrumentId, BigDecimal price);
 
     @Query("""
             SELECT o FROM Order o
@@ -34,7 +35,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             AND (:price IS NULL OR o.price >= :price)
             ORDER BY o.price DESC, o.createdAt ASC
             """)
-    List<Order> findMatchingBuyOrders(Long instrumentId, Double price);
+    List<Order> findMatchingBuyOrders(Long instrumentId, BigDecimal price);
 
     // BEST BUY ORDERS (for incoming SELL)
     @Query("""

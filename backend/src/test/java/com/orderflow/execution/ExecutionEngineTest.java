@@ -2,6 +2,8 @@ package com.orderflow.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,7 +31,7 @@ class ExecutionEngineTest {
     @Test
     void shouldNotExecuteAlreadyCancelledOrder() {
 
-        Order order = OrderTestFactory.limitBuy(100, 40.0);
+        Order order = OrderTestFactory.limitBuy(100, new BigDecimal("40.00"));
         order.transitionTo(OrderStatus.CANCELLED);
         orderRepository.save(order);
 

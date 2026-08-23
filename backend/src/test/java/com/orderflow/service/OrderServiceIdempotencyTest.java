@@ -2,6 +2,7 @@ package com.orderflow.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,7 @@ class OrderServiceIdempotencyTest {
         baseRequest.setOrderType(OrderType.BUY);
         baseRequest.setOrderKind(OrderKind.LIMIT);
         baseRequest.setQuantity(10);
-        baseRequest.setPrice(100.55);
+        baseRequest.setPrice(new BigDecimal("100.55"));
     }
 
     @Test
@@ -81,7 +82,7 @@ class OrderServiceIdempotencyTest {
     @Test
     void marketOrderShouldPersistNullPrice() {
         baseRequest.setOrderKind(OrderKind.MARKET);
-        baseRequest.setPrice(999.99); // ignored
+        baseRequest.setPrice(new BigDecimal("999.99")); // ignored
 
         OrderResponse response = orderService.placeOrder(baseRequest, "idm-market");
 

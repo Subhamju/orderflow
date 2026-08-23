@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -185,7 +186,7 @@ public class OrderServiceImpl implements OrderService {
                     "Quantity must be positive");
         }
         if (request.getOrderKind().name().equals("LIMIT") &&
-                (request.getPrice() == null || request.getPrice() <= 0)) {
+                (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0)) {
             throw new InvalidOrderException(
                     ErrorCode.INVALID_ORDER,
                     "Price required for LIMIT order");

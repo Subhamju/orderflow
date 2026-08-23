@@ -1,5 +1,6 @@
 package com.orderflow.matching;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class MatchingEngine {
                     incomingOrder.getRemainingQuantity(),
                     counterOrder.getRemainingQuantity());
 
-            double executionPrice = determineExecutionPrice(
+            BigDecimal executionPrice = determineExecutionPrice(
                     incomingOrder,
                     counterOrder);
 
@@ -80,13 +81,13 @@ public class MatchingEngine {
 
         // LIMIT vs LIMIT
         if (incoming.getOrderType() == OrderType.BUY) {
-            return incoming.getPrice() >= counter.getPrice();
+            return incoming.getPrice().compareTo(counter.getPrice()) >= 0;
         } else {
-            return incoming.getPrice() <= counter.getPrice();
+            return incoming.getPrice().compareTo(counter.getPrice()) <= 0;
         }
     }
 
-    private double determineExecutionPrice(Order incoming, Order counter) {
+    private BigDecimal determineExecutionPrice(Order incoming, Order counter) {
 
         if (incoming.getOrderKind() == OrderKind.MARKET)
             return counter.getPrice();
@@ -101,7 +102,7 @@ public class MatchingEngine {
     private void executeTrade(Order incoming,
             Order counter,
             int quantity,
-            double price) {
+            BigDecimal price) {
 
         incoming.setRemainingQuantity(
                 incoming.getRemainingQuantity() - quantity);

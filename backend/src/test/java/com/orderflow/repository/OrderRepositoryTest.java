@@ -2,6 +2,7 @@ package com.orderflow.repository;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ class OrderRepositoryTest {
         first.setOrderType(OrderType.BUY);
         first.setOrderKind(OrderKind.LIMIT);
         first.setQuantity(120);
-        first.setPrice(33.4);
+        first.setPrice(new BigDecimal("33.40"));
         first.setIdempotencyKey("key-123");
         first.setOrderStatus(OrderStatus.CREATED);
         first.setCreatedAt(LocalDateTime.now());
@@ -46,7 +47,7 @@ class OrderRepositoryTest {
         duplicate.setOrderType(OrderType.BUY);
         duplicate.setOrderKind(OrderKind.LIMIT);
         duplicate.setQuantity(120);
-        duplicate.setPrice(33.4);
+        duplicate.setPrice(new BigDecimal("33.40"));
         duplicate.setIdempotencyKey("key-123");
         duplicate.setOrderStatus(OrderStatus.CREATED);
         duplicate.setCreatedAt(LocalDateTime.now());

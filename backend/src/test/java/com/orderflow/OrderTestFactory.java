@@ -1,5 +1,6 @@
 package com.orderflow;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,7 +15,7 @@ import com.orderflow.domain.enums.OrderType;
 
 public class OrderTestFactory {
 
-    public static Order limitBuy(int qty, double price) {
+    public static Order limitBuy(int qty, BigDecimal price) {
         Order o = baseOrder(qty);
         o.setOrderType(OrderType.BUY);
         o.setOrderKind(OrderKind.LIMIT);
@@ -23,7 +24,7 @@ public class OrderTestFactory {
         return o;
     }
 
-    public static Order limitSell(int qty, double price) {
+    public static Order limitSell(int qty, BigDecimal price) {
         Order o = baseOrder(qty);
         o.setOrderType(OrderType.SELL);
         o.setOrderKind(OrderKind.LIMIT);
