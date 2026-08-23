@@ -2,25 +2,27 @@ package com.orderflow.service.impl;
 
 import com.orderflow.domain.entity.Order;
 import com.orderflow.domain.entity.OrderEvent;
+import com.orderflow.domain.entity.OutboxEvent;
 import com.orderflow.domain.enums.OrderEventType;
 import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderStatus;
+import com.orderflow.domain.enums.OutboxEventType;
 import com.orderflow.dto.OrderDetailsResponse;
 import com.orderflow.dto.OrderRequest;
 import com.orderflow.dto.OrderResponse;
 import com.orderflow.exception.ErrorCode;
 import com.orderflow.exception.InvalidOrderException;
-import com.orderflow.kafka.OrderKafkaProducer;
 import com.orderflow.repository.OrderEventRepository;
+import com.orderflow.repository.OutboxEventRepository;
 import com.orderflow.repository.OrderRepository;
 import com.orderflow.service.OrderService;
 
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
@@ -32,16 +34,17 @@ import java.util.Optional;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderEventRepository orderEventRepository;
-    private final OrderKafkaProducer orderKafkaProducer;
+    private final OutboxEventRepository outboxEventRepository;
 
     public OrderServiceImpl(OrderRepository orderRepository,
-            OrderEventRepository orderEventRepository, OrderKafkaProducer orderKafkaProducer) {
+            OrderEventRepository orderEventRepository, OutboxEventRepository outboxEventRepository) {
         this.orderRepository = orderRepository;
         this.orderEventRepository = orderEventRepository;
-        this.orderKafkaProducer = orderKafkaProducer;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Override
+    @Transactional
     public OrderResponse placeOrder(OrderRequest request, String idempotencyKey) {
 
         validate(request);
@@ -94,12 +97,12 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         recordEvent(order.getOrderId(), OrderEventType.SENT_TO_EXECUTOR);
+        outboxEventRepository.save(new OutboxEvent(
+                order.getOrderId(), OutboxEventType.ORDER_EXECUTION_REQUESTED));
 
         OrderStatus ackStatus = order.getOrderStatus();
 
-        orderKafkaProducer.publishOrderForExecution(order.getOrderId());
-
-        log.info("Order {} accepted for execution", order.getOrderId());
+        log.info("Order {} accepted and queued for execution", order.getOrderId());
 
         return new OrderResponse(
                 order.getOrderId(),

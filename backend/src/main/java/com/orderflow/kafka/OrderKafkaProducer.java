@@ -12,9 +12,9 @@ public class OrderKafkaProducer {
 
     private final KafkaTemplate<String, OrderExecutionEvent> kafkaTemplate;
 
-    public void publishOrderForExecution(Long orderId) {
+    public void publishOrderForExecution(Long orderId) throws Exception {
         OrderExecutionEvent event = new OrderExecutionEvent(orderId);
-        kafkaTemplate.send("order.execution", event);
+        kafkaTemplate.send("order.execution", event).get();
     }
 
 }

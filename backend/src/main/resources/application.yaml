@@ -32,3 +32,6 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
 
+orderflow:
+  outbox:
+    publish-interval-ms: 1000

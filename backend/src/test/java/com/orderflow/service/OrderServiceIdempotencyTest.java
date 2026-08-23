@@ -11,6 +11,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.orderflow.domain.entity.Order;
+import com.orderflow.domain.entity.OutboxEvent;
+import com.orderflow.domain.enums.OutboxEventStatus;
 import com.orderflow.domain.enums.OrderKind;
 import com.orderflow.domain.enums.OrderType;
 import com.orderflow.dto.OrderRequest;
@@ -18,6 +20,7 @@ import com.orderflow.dto.OrderResponse;
 import com.orderflow.exception.InvalidOrderException;
 import com.orderflow.kafka.OrderKafkaProducer;
 import com.orderflow.repository.OrderRepository;
+import com.orderflow.repository.OutboxEventRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -33,6 +36,9 @@ class OrderServiceIdempotencyTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
 
     private OrderRequest baseRequest;
 
@@ -58,6 +64,17 @@ class OrderServiceIdempotencyTest {
 
         assertEquals(first.getOrderId(), retry.getOrderId());
         assertTrue(retry.isDuplicate());
+        assertEquals(1, outboxEventRepository.count());
+    }
+
+    @Test
+    void acceptedOrderShouldCreatePendingExecutionOutboxEvent() {
+        OrderResponse response = orderService.placeOrder(baseRequest, "idm-outbox");
+
+        OutboxEvent outboxEvent = outboxEventRepository.findAll().getFirst();
+
+        assertEquals(response.getOrderId(), outboxEvent.getAggregateId());
+        assertEquals(OutboxEventStatus.PENDING, outboxEvent.getStatus());
     }
 
     @Test
